@@ -9,6 +9,13 @@ use raylib_rs::{
     PROJECTILE_CAP, SCREEN_H, SCREEN_W,
 };
 
+/*
+TODO
+- bullets (most likely multithread)
+- enemies
+- everything
+*/
+
 fn main() {
     let (mut rl, thread) = raylib::init()
         .size(SCREEN_W as i32, SCREEN_H as i32)
@@ -22,8 +29,6 @@ fn main() {
         d.clear_background(Color::DARKGRAY.alpha(0.1));
 
         player.draw(&mut d);
-
-        // HACK: temp draw_player
 
         handle_input(d, &mut player.pos);
     }
