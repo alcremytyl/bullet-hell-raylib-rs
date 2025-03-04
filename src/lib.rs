@@ -5,7 +5,14 @@ use macroquad::{
 };
 
 pub mod player;
-pub mod traits;
+
+pub mod traits {
+    pub trait Drawable {
+        fn draw(&self);
+    }
+
+    pub trait Entity {}
+}
 
 pub const PROJECTILE_CAP: usize = 500;
 pub const PLAYER_SIZE: f32 = 12.0; // assume half
