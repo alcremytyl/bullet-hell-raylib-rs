@@ -22,30 +22,9 @@ pub const SCREEN_W: f32 = 1280.0;
 pub const SCREEN_H: f32 = 720.0;
 pub const BG_COLOR: Color = WHITE;
 
-pub struct Bullet {
-    team: Team,
-    pos: Vec2,
-    velocity: Vec2,
-}
-
-impl Bullet {
-    pub fn new(team: Team, pos: Vec2, velocity: Vec2) -> Self {
-        Bullet {
-            team,
-            pos,
-            velocity,
-        }
-    }
-}
-
-pub enum Team {
-    PLAYER,
-    FOE,
-}
-
-pub fn clamp<T: PartialOrd>(n: T, lowest: T, highest: T) -> T {
-    let tmp = if n < lowest { lowest } else { n };
-    return if tmp > highest { highest } else { tmp };
+pub enum Targets {
+    PLAYER = 1 << 0,
+    FOE = 1 << 1,
 }
 
 pub fn draw_outline(points: &[Vec2], scale: f32, color: Color) {
@@ -70,7 +49,7 @@ pub fn draw_outline(points: &[Vec2], scale: f32, color: Color) {
     prime
         .iter()
         .reduce(|p1, p2| {
-            draw_line(p1.x, p1.y, p2.x, p2.y, 3.0, BLACK);
+            draw_line(p1.x, p1.y, p2.x, p2.y, 3.0, color);
             p2
         })
         .unwrap();
