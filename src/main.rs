@@ -1,8 +1,9 @@
 #![feature(portable_simd)]
-
 use std::{
+    cell::RefCell,
     process::exit,
-    simd::{cmp::SimdPartialOrd, f32x4, f32x64},
+    simd::{cmp::SimdPartialOrd, f32x64},
+    sync::{LazyLock, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -11,17 +12,19 @@ use macroquad::{
     rand::{rand, srand},
 };
 use raylib_rs::{
-    player::Player, traits::Drawable, Targets, PLAYER_SIZE, PLAYER_SLOW, PLAYER_SPEED,
-    PROJECTILE_CAP, SCREEN_H, SCREEN_W,
+    player::Player, traits::Drawable, Bullet, Bullets, Target, BULLET_DEVIATION, CHUNK_SIZE,
+    FIRE_RATE, PLAYER_SLOW, PLAYER_SPEED, PROJECTILE_CAP, SCREEN_H, SCREEN_W,
 };
 
 /*
 TODO
 - bullet coll
 - enemies
--
+- scale all movement to screen size
 - everything
 */
+
+// NOTE: testing
 
 fn conf() -> Conf {
     Conf {
@@ -33,30 +36,30 @@ fn conf() -> Conf {
     }
 }
 
-/// pos_x, pos_y, vel_x, vel_y, lifespan, team
-type Bullets = Vec<Vec<f32>>;
-const FIRE_RATE: f32 = 1000.0;
-const BULLET_DEVIATION: f32 = 1000.0;
-const CHUNK_SIZE: usize = 64;
-
 #[macroquad::main(conf)]
 async fn main() {
     let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     let mut player = Player::new();
     let mut cooldown = 0f32;
 
-    let mut bullets: Bullets = vec![vec![0.0; 0]; 6];
+    let mut bullets: Bullets = vec![vec![0.0; PROJECTILE_CAP]; 6];
     let zeroes = f32x64::splat(0.0);
+
+    shoot(
+        &mut bullets,
+        Bullet::new(
+            Vec2::new(SCREEN_W / 2.0, SCREEN_H / 2.0 + 100.0),
+            Vec2::new(0.0, 0.0),
+            1000.0,
+            Target::PLAYER,
+        ),
+        &mut cooldown,
+    );
 
     srand(start.as_secs().into());
 
     loop {
         let dt = get_frame_time();
-
-        clear_background(WHITE);
-
-        player.draw();
-        draw_text(&format!("{:?}", bullets[0].len()), 50.0, 50.0, 16.0, RED);
 
         // bullets
         if bullets[0].len() > 0 {
@@ -91,23 +94,26 @@ async fn main() {
                 to_delete[i] = bullets[4][i] <= 0.0;
             }
 
+            // NOTE: may change if the optimization brain worms win
             for i in (0..to_delete.len()).rev() {
-                println!("checking {i}");
                 if to_delete[i] {
                     for j in 0..bullets.len() {
                         bullets[j].remove(i);
                     }
                 }
             }
+        }
 
-            draw_text(&format!("{to_delete:?}"), 50.0, 100.0, 16.0, RED);
+        clear_background(WHITE);
 
-            for j in 0..bullets[0].len() {
-                draw_circle(bullets[0][j], bullets[1][j], 10.0, BLUE);
-            }
+        for j in 0..bullets[0].len() {
+            draw_circle(bullets[0][j], bullets[1][j], 10.0, BLUE);
         }
 
         cooldown = clamp(cooldown - dt, 0.0, FIRE_RATE / get_fps() as f32);
+
+        player.draw();
+        draw_text(&format!("{:?}", bullets[0].len()), 50.0, 50.0, 16.0, RED);
         draw_text(&format!("{cooldown}"), 50.0, 150.0, 16.0, RED);
 
         handle_input(&mut player.pos, &mut bullets, &start, &mut cooldown);
@@ -128,38 +134,34 @@ fn handle_input(
         * (1.0 - (PLAYER_SLOW * is_key_down(KeyCode::LeftShift) as i32 as f32))
         * get_frame_time();
 
-    player_pos.x = (player_pos.x - displace.x).clamp(0.0, SCREEN_W);
-    player_pos.y = (player_pos.y - displace.y).clamp(0.0, SCREEN_H);
+    player_pos.x = (player_pos.x - displace.x).clamp(0.0, screen_width());
+    player_pos.y = (player_pos.y - displace.y).clamp(0.0, screen_height());
 
-    // TODO: change to autofire
     if is_key_down(KeyCode::Space) && *cooldown == 0.0 {
-        shoot(player_pos, bullets, 1.0, Targets::FOE, cooldown);
+        let b = Bullet::new(
+            *player_pos,
+            Vec2::new(
+                (rand() as f32 % BULLET_DEVIATION) - BULLET_DEVIATION / 2.0,
+                1500.0,
+            ),
+            1.0,
+            Target::FOE,
+        );
+        shoot(bullets, b, cooldown);
     }
     if is_key_down(KeyCode::Escape) {
         exit(0);
     }
 }
 
-fn shoot(
-    pos: &Vec2,
-    bullets: &mut Vec<Vec<f32>>,
-    lifespan: f64,
-    targets: Targets,
-    cooldown: &mut f32,
-) {
-    bullets[0].push(pos.x);
-    bullets[1].push(pos.y);
-    bullets[2].push((rand() as f32 % BULLET_DEVIATION) - BULLET_DEVIATION / 2.0);
-    bullets[3].push(-1500.0);
-    bullets[4].push(lifespan as f32);
-    bullets[5].push(Targets::FOE as u32 as f32);
-
-    bullets[0].push(pos.x);
-    bullets[1].push(pos.y);
-    bullets[2].push((rand() as f32 % BULLET_DEVIATION) - BULLET_DEVIATION / 2.0);
-    bullets[3].push(-1500.0);
-    bullets[4].push(lifespan as f32);
-    bullets[5].push(targets as u32 as f32);
+// TODO: determine some direction-based deviation
+fn shoot(bullets: &mut Vec<Vec<f32>>, bullet: Bullet, cooldown: &mut f32) {
+    bullets[0].push(bullet.pos.x);
+    bullets[1].push(bullet.pos.y);
+    bullets[2].push(bullet.vel.x);
+    bullets[3].push(-bullet.vel.y);
+    bullets[4].push(bullet.lifespan);
+    bullets[5].push(bullet.target as u32 as f32);
 
     *cooldown = get_frame_time() as f32 / FIRE_RATE;
 }
