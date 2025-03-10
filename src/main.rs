@@ -13,7 +13,7 @@ use macroquad::{
 };
 use raylib_rs::{
     player::Player, traits::Drawable, Bullet, Bullets, Target, BULLET_DEVIATION, CHUNK_SIZE,
-    FIRE_RATE, PLAYER_SLOW, PLAYER_SPEED, PROJECTILE_CAP, SCREEN_H, SCREEN_W,
+    FIRE_RATE, PLAYER_SLOW, PLAYER_SPEED, SCREEN_H, SCREEN_W,
 };
 
 /*
@@ -42,11 +42,10 @@ async fn main() {
     let mut player = Player::new();
     let mut cooldown = 0f32;
 
-    let mut bullets: Bullets = vec![vec![0.0; PROJECTILE_CAP]; 6];
+    let mut bullets = Bullets(vec![vec![0.0; 500]; 6]);
     let zeroes = f32x64::splat(0.0);
 
-    shoot(
-        &mut bullets,
+    bullets.shoot(
         Bullet::new(
             Vec2::new(SCREEN_W / 2.0, SCREEN_H / 2.0 + 100.0),
             Vec2::new(0.0, 0.0),
@@ -87,11 +86,11 @@ async fn main() {
             }
 
             // apply to rest
-            for i in i..bullets[0].len() {
-                bullets[0][i] += bullets[2][i] * dt;
-                bullets[1][i] += bullets[3][i] * dt;
-                bullets[4][i] -= dt;
-                to_delete[i] = bullets[4][i] <= 0.0;
+            for i in i..bullets.len() {
+                bullets.0[0][i] += bullets.0[2][i] * dt;
+                bullets.0[1][i] += bullets.0[3][i] * dt;
+                bullets.0[4][i] -= dt;
+                to_delete[i] = bullets.0[4][i] <= 0.0;
             }
 
             // NOTE: may change if the optimization brain worms win
@@ -106,27 +105,22 @@ async fn main() {
 
         clear_background(WHITE);
 
-        for j in 0..bullets[0].len() {
+        for j in 0..bullets.len() {
             draw_circle(bullets[0][j], bullets[1][j], 10.0, BLUE);
         }
 
         cooldown = clamp(cooldown - dt, 0.0, FIRE_RATE / get_fps() as f32);
 
         player.draw();
-        draw_text(&format!("{:?}", bullets[0].len()), 50.0, 50.0, 16.0, RED);
+        draw_text(&format!("{:?}", bullets.0[0].len()), 50.0, 50.0, 16.0, RED);
         draw_text(&format!("{cooldown}"), 50.0, 150.0, 16.0, RED);
 
-        handle_input(&mut player.pos, &mut bullets, &start, &mut cooldown);
+        handle_input(&mut player.pos, &mut bullets, &mut cooldown);
         next_frame().await;
     }
 }
 
-fn handle_input(
-    player_pos: &mut Vec2,
-    bullets: &mut Vec<Vec<f32>>,
-    start: &Duration,
-    cooldown: &mut f32,
-) {
+fn handle_input(player_pos: &mut Vec2, bullets: &mut Bullets, cooldown: &mut f32) {
     let displace = Vec2 {
         x: (is_key_down(KeyCode::A) as i32 - is_key_down(KeyCode::D) as i32) as f32,
         y: (is_key_down(KeyCode::W) as i32 - is_key_down(KeyCode::S) as i32) as f32,
@@ -147,7 +141,8 @@ fn handle_input(
             1.0,
             Target::FOE,
         );
-        shoot(bullets, b, cooldown);
+
+        bullets.push(b, cooldown);
     }
     if is_key_down(KeyCode::Escape) {
         exit(0);
@@ -155,13 +150,3 @@ fn handle_input(
 }
 
 // TODO: determine some direction-based deviation
-fn shoot(bullets: &mut Vec<Vec<f32>>, bullet: Bullet, cooldown: &mut f32) {
-    bullets[0].push(bullet.pos.x);
-    bullets[1].push(bullet.pos.y);
-    bullets[2].push(bullet.vel.x);
-    bullets[3].push(-bullet.vel.y);
-    bullets[4].push(bullet.lifespan);
-    bullets[5].push(bullet.target as u32 as f32);
-
-    *cooldown = get_frame_time() as f32 / FIRE_RATE;
-}

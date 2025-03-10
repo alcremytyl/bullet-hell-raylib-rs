@@ -2,10 +2,10 @@ use macroquad::{
     color::{Color, BLACK, WHITE},
     math::Vec2,
     shapes::draw_line,
+    time::get_frame_time,
 };
 
 pub mod player;
-pub mod weapon;
 
 pub mod traits {
     pub trait Drawable {
@@ -22,12 +22,31 @@ pub const FIRE_RATE: f32 = 1000.0;
 pub const PLAYER_SIZE: f32 = 12.0; // assume half
 pub const PLAYER_SLOW: f32 = 0.6;
 pub const PLAYER_SPEED: f32 = 250.0;
-pub const PROJECTILE_CAP: usize = 500;
 pub const SCREEN_H: f32 = 720.0;
 pub const SCREEN_W: f32 = 1280.0;
 
 /// pos_x, pos_y, vel_x, vel_y, lifespan, team
-pub type Bullets = Vec<Vec<f32>>;
+pub struct Bullets(pub Vec<Vec<f32>>);
+
+impl Bullets {
+    pub fn push(&mut self, bullet: Bullet, cooldown: &mut f32) {
+        self.0[0].push(bullet.pos.x);
+        self.0[1].push(bullet.pos.y);
+        self.0[2].push(bullet.vel.x);
+        self.0[3].push(-bullet.vel.y);
+        self.0[4].push(bullet.lifespan);
+        self.0[5].push(bullet.target as u32 as f32);
+
+        *cooldown = get_frame_time() as f32 / FIRE_RATE;
+    }
+
+    pub fn draw() {}
+
+    /// size of internal members, assumes all children are equal in length
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+}
 
 pub enum Target {
     PLAYER = 1 << 0,
