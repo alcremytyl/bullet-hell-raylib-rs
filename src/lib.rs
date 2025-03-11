@@ -4,8 +4,11 @@ use macroquad::{
     shapes::draw_line,
     time::get_frame_time,
 };
+use target::Target;
 
+pub mod bullets;
 pub mod player;
+pub mod target;
 
 pub mod traits {
     pub trait Drawable {
@@ -25,33 +28,8 @@ pub const PLAYER_SPEED: f32 = 250.0;
 pub const SCREEN_H: f32 = 720.0;
 pub const SCREEN_W: f32 = 1280.0;
 
-/// pos_x, pos_y, vel_x, vel_y, lifespan, team
-pub struct Bullets(pub Vec<Vec<f32>>);
-
-impl Bullets {
-    pub fn push(&mut self, bullet: Bullet, cooldown: &mut f32) {
-        self.0[0].push(bullet.pos.x);
-        self.0[1].push(bullet.pos.y);
-        self.0[2].push(bullet.vel.x);
-        self.0[3].push(-bullet.vel.y);
-        self.0[4].push(bullet.lifespan);
-        self.0[5].push(bullet.target as u32 as f32);
-
-        *cooldown = get_frame_time() as f32 / FIRE_RATE;
-    }
-
-    pub fn draw() {}
-
-    /// size of internal members, assumes all children are equal in length
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-}
-
-pub enum Target {
-    PLAYER = 1 << 0,
-    FOE = 1 << 1,
-}
+pub const TEAM_PLAYER: Target = Target(1 << 0);
+pub const TEAM_FOE: Target = Target(1 << 1);
 
 pub struct Bullet {
     pub pos: Vec2,

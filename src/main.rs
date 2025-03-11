@@ -105,6 +105,8 @@ async fn main() {
 
         clear_background(WHITE);
 
+        bullets.draw();
+
         for j in 0..bullets.len() {
             draw_circle(bullets[0][j], bullets[1][j], 10.0, BLUE);
         }
