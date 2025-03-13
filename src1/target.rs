@@ -26,16 +26,10 @@ impl From<f32> for Target {
 }
 
 impl Target {
-    pub fn as_color(self) -> Color {
+    pub fn as_color(&self) -> Color {
         match self {
             Self::PLAYER => BLUE,
             Self::ENEMY => RED,
         }
-    }
-}
-
-impl Into<Color> for f32 {
-    fn into(self) -> Color {
-        Target(self).as_color()
     }
 }
