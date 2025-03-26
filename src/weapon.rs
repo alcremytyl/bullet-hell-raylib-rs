@@ -1,12 +1,16 @@
-use crate::game::Game;
+use std::{default, env::Args};
 
-pub struct Weapon {
+use macroquad::math::Vec2;
+
+use crate::{
+    bullet::Bullet,
+    entity::{Entity, EntityStats},
+    target::Target,
+};
+
+pub struct Weapon<'a> {
     pub cooldown: Option<f32>,
-    pub pattern: dyn FnMut,
-}
-
-impl Weapon {
-    pub fn shoot(game: &mut Game) {
-        todo!()
-    }
+    pub shoot: Box<dyn FnMut() -> Bullet>,
+    pub x: f32,
+    pub parent: &'a EntityStats,
 }

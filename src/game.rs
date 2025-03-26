@@ -3,10 +3,11 @@ use macroquad::{
     window::{screen_height, screen_width},
 };
 
-use crate::{player::Player, weapon::Weapon};
+use crate::{bullet::Bullet, player::Player, weapon::Weapon};
 
 pub struct Game {
     pub player: Player,
+    pub bullets: Vec<Bullet>,
 }
 
 impl Game {
@@ -18,6 +19,7 @@ impl Game {
                 weapon: todo!(),
                 iframes: None,
             },
+            bullets: vec![],
         }
     }
 }
