@@ -28,7 +28,8 @@ async fn main() {
             break;
         }
 
-        clear_background(WHITE);
+        game.handle_input();
+        game.render();
         next_frame().await;
     }
 }
