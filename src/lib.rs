@@ -34,3 +34,7 @@ pub fn draw_outline(points: &[Vec2], scale: f32, color: Color) {
         })
         .unwrap();
 }
+
+pub trait Draw {
+    fn draw(&self);
+}

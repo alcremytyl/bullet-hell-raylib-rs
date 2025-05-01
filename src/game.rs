@@ -30,9 +30,9 @@ impl Game {
                     angle: 270.0,
                     iframes: None,
                     iframe_duration: 60.0 * 3.0,
-                    target: Target::ENEMY,
+                    target: Some(Target::ENEMY),
+                    weapon: Some(Weapon::PlayerBasic),
                 },
-                weapon: Some(Weapon::PlayerBasic),
             },
             bullets: vec![],
         }
@@ -48,7 +48,13 @@ impl Game {
             * dt
             * (1.0 - PLAYER_SLOW * is_key_down(KeyCode::LeftShift) as u32 as f32);
 
+        // TODO: adjust angle
+
         self.player.stats.pos -= displace;
+
+        if is_key_down(KeyCode::Space) {
+            self.player.shoot();
+        }
     }
 
     pub fn render(&self) {
@@ -63,9 +69,11 @@ impl Game {
             let debug_txt = format!(
                 "\
                     player pos: ({}, {})\n\
-                    bullet count: N/A
+                    bullet count: {}
                 ",
-                pos.x, pos.y
+                pos.x,
+                pos.y,
+                self.bullets.len()
             );
             draw_text(&debug_txt, 20.0, 20.0, 12.0, BLACK);
         }

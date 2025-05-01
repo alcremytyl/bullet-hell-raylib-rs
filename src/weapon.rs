@@ -8,19 +8,18 @@ pub enum Weapon {
 }
 
 impl Weapon {
-    pub fn shoot(&self, pos: &Vec2, angle: f32) -> Vec<Bullet> {
+    pub fn shoot(&self, pos: &Vec2, angle: f32) -> Bullet {
         match self {
-            Self::PlayerBasic => {
+            Self::PlayerBasic => (
                 vec![Bullet::new(
                     *pos,
                     Vec2::new(0.0, 200.0) * Vec2::from_angle(angle),
                     Vec2::new(10.0, 10.0),
                     Target::ENEMY,
-                )]
-            }
-            Self::PlayerDouble => {
-                vec![]
-            }
+                )],
+                200.0,
+            ),
+            Self::PlayerDouble => (vec![], 200.0),
         }
     }
 }

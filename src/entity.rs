@@ -1,33 +1,41 @@
 use macroquad::math::Vec2;
 
-use crate::{bullet::Bullet, target::Target};
+use crate::{bullet::Bullet, target::Target, weapon::Weapon, Draw};
 
-pub struct EntityStats {
+pub struct Entity {
     pub angle: f32,
     pub health: u32,
-    pub iframes: Option<f32>,
     pub iframe_duration: f32,
+    pub iframes: Option<f32>,
     pub pos: Vec2,
-    pub target: Target,
+    pub target: Option<Target>,
+    pub vel: Vec2,
+    pub weapon: Option<Weapon>,
 }
 
-pub trait Entity {
-    // fn get_pos(&self) -> f32;
-    // fn get_angle(&self) -> f32;
-    //
-    // fn get_mut_health(&mut self) -> &mut u32;
-    // fn get_mut_iframes(&mut self) -> &mut Option<f32>;
-    // fn get_iframe_duration(self) -> f32;
-    // fn get_health(&self) -> u32;
-    //
-    // fn take_damage(&mut self, damage: u32) {
-    //     *self.get_mut_health() -= damage;
-    //     *self.get_mut_iframes() = *self.get_mut_iframes();
-    // }
+impl Entity {
+    fn take_damage(&mut self, damage: u32) {
+        *self.health -= damage;
+        *self.iframes = *self.iframe_duration;
+    }
 
-    fn shoot(&self) -> Vec<Bullet>;
+    fn shoot(&self) -> Vec<Bullet> {
+        match self.weapon {
+            Some(w) => w.shoot(&self.pos, self.angle),
+            None => {
+                println!("no weapon");
+                vec![]
+            }
+        }
+    }
 
-    fn draw(&self);
+    fn update(&self) {
+        unimplemented!()
+    }
 }
 
-// impl Drawable
+impl Draw for Entity {
+    fn draw(&self) {
+        unimplemented!("Implement drawing");
+    }
+}
